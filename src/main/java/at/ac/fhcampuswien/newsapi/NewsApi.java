@@ -114,15 +114,15 @@ public class NewsApi {
         this.endpoint = endpoint;
     }
 
-    protected String requestData() {
+    protected String requestData() throws NewsApiException {
         String url = buildURL();
         System.out.println("URL: " + url);
         URL obj = null;
         try {
             obj = new URL(url);
         } catch (MalformedURLException e) {
-            // TODO improve ErrorHandling
             e.printStackTrace();
+            throw new NewsApiException("URL is not valid.");
         }
         HttpURLConnection con;
         StringBuilder response = new StringBuilder();
@@ -135,18 +135,19 @@ public class NewsApi {
             }
             in.close();
         } catch (IOException e) {
-            // TODO improve ErrorHandling
             System.out.println("Error "+e.getMessage());
+            throw new NewsApiException("No connection could be established");
         }
         return response.toString();
     }
 
-    protected String buildURL() {
-        // TODO ErrorHandling
+    protected String buildURL() throws NewsApiException {
         String urlbase = String.format(NEWS_API_URL,getEndpoint().getValue(),getQ(),getApiKey());
         StringBuilder sb = new StringBuilder(urlbase);
 
-        System.out.println(urlbase);
+        if(getApiKey().equals("")){
+            throw new NewsApiException("API Key is missing, please enter your API Key");
+        }
 
         if(getFrom() != null){
             sb.append(DELIMITER).append("from=").append(getFrom());
@@ -184,22 +185,22 @@ public class NewsApi {
         return sb.toString();
     }
 
-    public NewsResponse getNews() {
+    public NewsResponse getNews() throws NewsApiException {
         NewsResponse newsReponse = null;
         String jsonResponse = requestData();
         if(jsonResponse != null && !jsonResponse.isEmpty()){
-
             ObjectMapper objectMapper = new ObjectMapper();
             try {
                 newsReponse = objectMapper.readValue(jsonResponse, NewsResponse.class);
                 if(!"ok".equals(newsReponse.getStatus())){
-                    System.out.println("Error: "+newsReponse.getStatus());
+                    System.out.println("Error: "+ newsReponse.getStatus());
                 }
             } catch (JsonProcessingException e) {
                 System.out.println("Error: "+e.getMessage());
             }
+        } else {
+            throw new NewsApiException("There was no News Response");
         }
-        //TODO improve Errorhandling
         return newsReponse;
     }
 }
